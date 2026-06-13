@@ -1,1 +1,32 @@
-[]
+[
+  {
+    "cid": "bafybeidpcizpfc23nwn44kycsnnpybrvjfqhyllytbp7i3u5grlikhbmzm",
+    "name": "Join us to celebrate (1).png",
+    "mimeType": "image/png",
+    "category": "image",
+    "uploadedAt": "2026-06-13T13:04:09.891Z",
+    "pinataFileId": "019ec114-b19b-7daa-bd14-3d26736af013",
+    "thumbnailCid": "bafkreie2qg54uihygmxab4sg4pzbs3vtykiswtv7yfqranu74vwxwwzkoa",
+    "thumbnailPinataFileId": "019ec115-3595-7791-a36a-98014d5ecd87"
+  },
+  {
+    "cid": "bafybeigiiwnrw6xygtti7q2ieg6bhdiqr2pst2nzxzkk7b35byonvsu6q4",
+    "name": "1J5aZ1pnxpnYMAsb.mp4",
+    "mimeType": "video/mp4",
+    "category": "video",
+    "uploadedAt": "2026-06-13T13:04:43.564Z",
+    "pinataFileId": "019ec115-9a2a-7402-969e-792a661338b5",
+    "thumbnailCid": "bafkreifvw2dxcaguquf3lqr6vghrins6iwcamnpksjvn4x2sk7o6657nxy",
+    "thumbnailPinataFileId": "019ec115-b282-7e1e-a895-8e30cdd0de3d"
+  },
+  {
+    "cid": "bafkreie7p56psp4guavuzeghjnfbk4zejd5347jyqor5dme52apbj3mnau",
+    "name": "Original Logo.png",
+    "mimeType": "image/png",
+    "category": "image",
+    "uploadedAt": "2026-06-13T13:17:29.611Z",
+    "pinataFileId": "019ec121-54f4-7d3c-a9ef-bba841e0bbf4",
+    "thumbnailCid": "bafkreihwaa7rzq4nxxpvakgw3ksnkankx2poimc2llxmtfjmdey4lj3qsq",
+    "thumbnailPinataFileId": "019ec121-5da0-79f8-ab17-99794ff8346d"
+  }
+]

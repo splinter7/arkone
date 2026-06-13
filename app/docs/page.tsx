@@ -1,5 +1,18 @@
-import Link from "next/link";
-import { ArkOneLogo } from "@/components/ArkOneLogo";
+import { ApiKeyGate } from "@/components/ApiKeyGate";
+import { AppHeader } from "@/components/AppHeader";
+import { DocsSidebar } from "@/components/DocsSidebar";
+
+const DOC_TOPICS = [
+  { id: "authentication", label: "Authentication" },
+  { id: "upload", label: "Upload a file" },
+  { id: "upload-url", label: "Get presigned upload URL" },
+  { id: "register", label: "Register an uploaded asset" },
+  { id: "list", label: "List all assets" },
+  { id: "playback", label: "Get signed playback URL" },
+  { id: "delete", label: "Delete an asset" },
+  { id: "thumbnail-get", label: "Get signed thumbnail URL" },
+  { id: "thumbnail-post", label: "Generate thumbnail" },
+] as const;
 
 function Method({ children }: { children: string }) {
   const colors: Record<string, string> = {
@@ -18,12 +31,14 @@ function Method({ children }: { children: string }) {
 }
 
 function Endpoint({
+  id,
   method,
   path,
   title,
   description,
   children,
 }: {
+  id: string;
   method: string;
   path: string;
   title: string;
@@ -31,7 +46,10 @@ function Endpoint({
   children?: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3 border-b border-neutral-200 pb-10 dark:border-neutral-800">
+    <section
+      id={id}
+      className="scroll-mt-8 space-y-3 border-b border-neutral-200 pb-10 dark:border-neutral-800"
+    >
       <div className="flex flex-wrap items-center gap-3">
         <Method>{method}</Method>
         <code className="font-mono text-sm">{path}</code>
@@ -55,138 +73,142 @@ function Code({ children }: { children: string }) {
 
 export default function DocsPage() {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-6 py-16">
-      <header className="flex items-start justify-between gap-4 border-b border-neutral-200 pb-8 dark:border-neutral-800">
-        <div className="space-y-2">
-          <ArkOneLogo />
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            API reference
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-4">
-          <Link
-            href="/"
-            className="text-sm text-neutral-500 underline-offset-4 transition-colors duration-150 hover:underline dark:text-neutral-400"
-          >
-            Back to app
-          </Link>
-        </div>
-      </header>
+    <ApiKeyGate>
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-6 py-16">
+        <AppHeader tagline="API reference" />
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">Authentication</h2>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          Every endpoint requires a Bearer token matching your{" "}
-          <code className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-xs dark:bg-neutral-900">
-            API_SECRET_KEY
-          </code>{" "}
-          environment variable.
-        </p>
-        <Code>{`Authorization: Bearer <API_SECRET_KEY>`}</Code>
-      </section>
+        <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-12">
+          <DocsSidebar topics={[...DOC_TOPICS]} />
 
-      <Endpoint
-        method="POST"
-        path="/api/upload"
-        title="Upload a file"
-        description="Upload a small image, video, or audio file via multipart form data. For large files, use the presigned URL flow below."
-      >
-        <Code>{`curl -X POST http://localhost:3000/api/upload \\
+          <div className="min-w-0 flex-1 space-y-10">
+            <section
+              id="authentication"
+              className="scroll-mt-8 space-y-3 border-b border-neutral-200 pb-10 dark:border-neutral-800"
+            >
+              <h2 className="text-lg font-medium">Authentication</h2>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Every endpoint requires a Bearer token matching your{" "}
+                <code className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-xs dark:bg-neutral-900">
+                  API_SECRET_KEY
+                </code>{" "}
+                environment variable.
+              </p>
+              <Code>{`Authorization: Bearer <API_SECRET_KEY>`}</Code>
+            </section>
+
+            <Endpoint
+              id="upload"
+              method="POST"
+              path="/api/upload"
+              title="Upload a file"
+              description="Upload a small image, video, or audio file via multipart form data. For large files, use the presigned URL flow below."
+            >
+              <Code>{`curl -X POST http://localhost:3000/api/upload \\
   -H "Authorization: Bearer your_secret" \\
   -F "file=@photo.jpg"`}</Code>
-      </Endpoint>
+            </Endpoint>
 
-      <Endpoint
-        method="GET"
-        path="/api/upload/url"
-        title="Get presigned upload URL"
-        description="Returns a signed URL for uploading large files directly to Pinata. Upload to the returned URL, then register the CID."
-      >
-        <Code>{`curl http://localhost:3000/api/upload/url \\
+            <Endpoint
+              id="upload-url"
+              method="GET"
+              path="/api/upload/url"
+              title="Get presigned upload URL"
+              description="Returns a signed URL for uploading large files directly to Pinata. Upload to the returned URL, then register the CID."
+            >
+              <Code>{`curl http://localhost:3000/api/upload/url \\
   -H "Authorization: Bearer your_secret"`}</Code>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          Response:{" "}
-          <code className="font-mono text-xs">{`{ "url": "...", "expiresSec": 300 }`}</code>
-        </p>
-      </Endpoint>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Response:{" "}
+                <code className="font-mono text-xs">{`{ "url": "...", "expiresSec": 300 }`}</code>
+              </p>
+            </Endpoint>
 
-      <Endpoint
-        method="POST"
-        path="/api/media/register"
-        title="Register an uploaded asset"
-        description="Records a CID after uploading directly to a presigned Pinata URL."
-      >
-        <Code>{`curl -X POST http://localhost:3000/api/media/register \\
+            <Endpoint
+              id="register"
+              method="POST"
+              path="/api/media/register"
+              title="Register an uploaded asset"
+              description="Records a CID after uploading directly to a presigned Pinata URL."
+            >
+              <Code>{`curl -X POST http://localhost:3000/api/media/register \\
   -H "Authorization: Bearer your_secret" \\
   -H "Content-Type: application/json" \\
   -d '{"cid":"bafy...","name":"clip.mp4","mimeType":"video/mp4"}'`}</Code>
-      </Endpoint>
+            </Endpoint>
 
-      <Endpoint
-        method="GET"
-        path="/api/media"
-        title="List all assets"
-        description="Returns every registered media asset."
-      >
-        <Code>{`curl http://localhost:3000/api/media \\
+            <Endpoint
+              id="list"
+              method="GET"
+              path="/api/media"
+              title="List all assets"
+              description="Returns every registered media asset."
+            >
+              <Code>{`curl http://localhost:3000/api/media \\
   -H "Authorization: Bearer your_secret"`}</Code>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          Response:{" "}
-          <code className="font-mono text-xs">{`{ "assets": [...] }`}</code>
-        </p>
-      </Endpoint>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Response:{" "}
+                <code className="font-mono text-xs">{`{ "assets": [...] }`}</code>
+              </p>
+            </Endpoint>
 
-      <Endpoint
-        method="GET"
-        path="/api/media/{cid}"
-        title="Get signed playback URL"
-        description="Returns a time-limited signed gateway URL for streaming or downloading the asset."
-      >
-        <Code>{`curl http://localhost:3000/api/media/bafybeig... \\
+            <Endpoint
+              id="playback"
+              method="GET"
+              path="/api/media/{cid}"
+              title="Get signed playback URL"
+              description="Returns a time-limited signed gateway URL for streaming or downloading the asset."
+            >
+              <Code>{`curl http://localhost:3000/api/media/bafybeig... \\
   -H "Authorization: Bearer your_secret"`}</Code>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          Response:{" "}
-          <code className="font-mono text-xs">
-            {`{ "cid", "name", "mimeType", "category", "url", "expiresIn" }`}
-          </code>
-        </p>
-      </Endpoint>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Response:{" "}
+                <code className="font-mono text-xs">
+                  {`{ "cid", "name", "mimeType", "category", "url", "expiresIn" }`}
+                </code>
+              </p>
+            </Endpoint>
 
-      <Endpoint
-        method="DELETE"
-        path="/api/media/{cid}"
-        title="Delete an asset"
-        description="Removes the file from Pinata and deletes the local asset record."
-      >
-        <Code>{`curl -X DELETE http://localhost:3000/api/media/bafybeig... \\
+            <Endpoint
+              id="delete"
+              method="DELETE"
+              path="/api/media/{cid}"
+              title="Delete an asset"
+              description="Removes the file from Pinata and deletes the local asset record."
+            >
+              <Code>{`curl -X DELETE http://localhost:3000/api/media/bafybeig... \\
   -H "Authorization: Bearer your_secret"`}</Code>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          Response:{" "}
-          <code className="font-mono text-xs">{`{ "cid": "...", "deleted": true }`}</code>
-        </p>
-      </Endpoint>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Response:{" "}
+                <code className="font-mono text-xs">{`{ "cid": "...", "deleted": true }`}</code>
+              </p>
+            </Endpoint>
 
-      <Endpoint
-        method="GET"
-        path="/api/media/{cid}/thumbnail"
-        title="Get signed thumbnail URL"
-        description="Returns a time-limited signed gateway URL for the asset thumbnail."
-      >
-        <Code>{`curl http://localhost:3000/api/media/bafybeig.../thumbnail \\
+            <Endpoint
+              id="thumbnail-get"
+              method="GET"
+              path="/api/media/{cid}/thumbnail"
+              title="Get signed thumbnail URL"
+              description="Returns a time-limited signed gateway URL for the asset thumbnail."
+            >
+              <Code>{`curl http://localhost:3000/api/media/bafybeig.../thumbnail \\
   -H "Authorization: Bearer your_secret"`}</Code>
-      </Endpoint>
+            </Endpoint>
 
-      <Endpoint
-        method="POST"
-        path="/api/media/{cid}/thumbnail"
-        title="Generate thumbnail"
-        description={`Generates a WebP thumbnail for an asset. Pass { "force": true } to regenerate an existing thumbnail.`}
-      >
-        <Code>{`curl -X POST http://localhost:3000/api/media/bafybeig.../thumbnail \\
+            <Endpoint
+              id="thumbnail-post"
+              method="POST"
+              path="/api/media/{cid}/thumbnail"
+              title="Generate thumbnail"
+              description={`Generates a WebP thumbnail for an asset. Pass { "force": true } to regenerate an existing thumbnail.`}
+            >
+              <Code>{`curl -X POST http://localhost:3000/api/media/bafybeig.../thumbnail \\
   -H "Authorization: Bearer your_secret" \\
   -H "Content-Type: application/json" \\
   -d '{"force":false}'`}</Code>
-      </Endpoint>
-    </main>
+            </Endpoint>
+          </div>
+        </div>
+      </main>
+    </ApiKeyGate>
   );
 }

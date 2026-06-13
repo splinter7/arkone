@@ -10,7 +10,7 @@ interface ArkOneMarkProps {
 
 /** Symmetric bold "A" ring — evenodd cutout for clean negative space */
 const A_CUTOUT =
-  "M16 8.5L23.75 26H21.25L18.75 20.5H13.25L10.75 26H8.25L16 8.5Z" +
+  "M16 8L23.75 26H21.25L18.75 20.5H13.25L10.75 26H8.25L16 8Z" +
   "M16 12.75L19.1 19.5H12.9L16 12.75Z";
 
 export function ArkOneMark({
@@ -29,6 +29,7 @@ export function ArkOneMark({
       viewBox="0 0 32 32"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      shapeRendering="geometricPrecision"
       aria-hidden
       className={className}
     >
@@ -43,7 +44,7 @@ export function ArkOneMark({
         y="3"
         width="26"
         height="26"
-        rx="6"
+        rx="4"
         fill={fill}
         mask={`url(#${maskId})`}
       />
@@ -111,7 +112,7 @@ export function ArkOneLogo({
   const resolvedMarkSize = markSize ?? MARK_SIZE[size];
 
   return (
-    <div className={`flex items-center gap-3 ${className ?? ""}`}>
+    <div className={`flex items-center gap-1.5 ${className ?? ""}`}>
       <ArkOneMark size={resolvedMarkSize} variant={variant} />
       {wordmarkClassName ? (
         <span className={wordmarkClassName}>ArkOne</span>

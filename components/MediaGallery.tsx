@@ -217,6 +217,7 @@ export function MediaGallery({ refreshKey }: MediaGalleryProps) {
     new Set(),
   );
   const requestedThumbnailGeneration = useRef(new Set<string>());
+  const previewContentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [loadingCid, setLoadingCid] = useState<string | null>(null);
   const [expandedCid, setExpandedCid] = useState<string | null>(null);
   const [confirmDeleteCid, setConfirmDeleteCid] = useState<string | null>(null);
@@ -436,6 +437,27 @@ export function MediaGallery({ refreshKey }: MediaGalleryProps) {
     },
     [expandedCid, loadPlayback],
   );
+
+  useEffect(() => {
+    if (!expandedCid) return;
+
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const expandDelayMs = prefersReducedMotion ? 0 : 460;
+
+    const scrollPreviewIntoView = () => {
+      const content = previewContentRefs.current[expandedCid];
+      content?.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    };
+
+    const timer = window.setTimeout(scrollPreviewIntoView, expandDelayMs);
+
+    return () => window.clearTimeout(timer);
+  }, [expandedCid]);
 
   async function copyPlaybackUrl(asset: Asset) {
     let url = playback[asset.cid]?.url;
@@ -670,7 +692,12 @@ export function MediaGallery({ refreshKey }: MediaGalleryProps) {
             >
               <div className="overflow-hidden min-h-0">
                 {isExpanded && (
-                  <div className="relative min-h-80 w-full animate-fade-in-up">
+                  <div
+                    ref={(element) => {
+                      previewContentRefs.current[asset.cid] = element;
+                    }}
+                    className="relative min-h-80 w-full scroll-mt-6 animate-fade-in-up"
+                  >
                     {loadingCid === asset.cid && (
                       <PreviewPreloader label="Fetching playback URL…" />
                     )}

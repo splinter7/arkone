@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiFetch, getStoredApiKey } from "@/lib/api-client";
 import {
   isAllowedMimeType,
@@ -12,6 +12,7 @@ import { useToast } from "./ToastProvider";
 
 interface UploadZoneProps {
   onUploaded: (asset: Asset) => void;
+  onUploadingChange?: (uploading: boolean) => void;
 }
 
 function parseUploadResponse(body: string): Asset {
@@ -129,12 +130,16 @@ async function uploadViaPresignedUrl(
   };
 }
 
-export function UploadZone({ onUploaded }: UploadZoneProps) {
+export function UploadZone({ onUploaded, onUploadingChange }: UploadZoneProps) {
   const toast = useToast();
   const [dragging, setDragging] = useState(false);
   const [uploadPhase, setUploadPhase] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
+
+  useEffect(() => {
+    onUploadingChange?.(uploading);
+  }, [uploading, onUploadingChange]);
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -175,12 +180,12 @@ export function UploadZone({ onUploaded }: UploadZoneProps) {
   );
 
   return (
-    <section className="space-y-4">
+    <div className="space-y-4">
       <div
-        className={`relative overflow-hidden rounded-2xl border-2 border-dashed px-8 py-16 text-center transition-all duration-300 ease-out ${
+        className={`relative overflow-hidden rounded-2xl border-2 border-dashed px-8 py-12 text-center transition-all duration-300 ease-out ${
           dragging
             ? "scale-[1.01] border-neutral-900 bg-neutral-100 ring-4 ring-neutral-900/5 dark:border-neutral-100 dark:bg-neutral-900 dark:ring-neutral-100/10"
-            : "border-neutral-300 bg-neutral-50 shadow-sm hover:border-neutral-400 hover:bg-neutral-100/80 dark:border-neutral-700 dark:bg-neutral-900/50 dark:shadow-none dark:hover:border-neutral-600 dark:hover:bg-neutral-900/70"
+            : "border-neutral-300 bg-white shadow-sm hover:border-neutral-400 hover:bg-neutral-100/80 dark:border-neutral-700 dark:bg-neutral-950/50 dark:shadow-none dark:hover:border-neutral-600 dark:hover:bg-neutral-950/70"
         } ${uploading ? "pointer-events-none opacity-70" : ""}`}
         onDragOver={(event) => {
           event.preventDefault();
@@ -222,7 +227,7 @@ export function UploadZone({ onUploaded }: UploadZoneProps) {
 
       {uploading && progress !== null && (
         <div
-          className="animate-fade-in-up space-y-1 rounded-xl bg-neutral-50 px-4 py-3 dark:bg-neutral-900/50"
+          className="animate-fade-in-up space-y-1 rounded-xl bg-white px-4 py-3 dark:bg-neutral-950/50"
           role="progressbar"
           aria-valuenow={progress}
           aria-valuemin={0}
@@ -240,6 +245,6 @@ export function UploadZone({ onUploaded }: UploadZoneProps) {
           </p>
         </div>
       )}
-    </section>
+    </div>
   );
 }

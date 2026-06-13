@@ -5,7 +5,7 @@
       <path
         fill="black"
         fill-rule="evenodd"
-        d="M16 8.5L23.75 26H21.25L18.75 20.5H13.25L10.75 26H8.25L16 8.5ZM16 12.75L19.1 19.5H12.9L16 12.75Z"
+        d="M16 8L23.75 26H21.25L18.75 20.5H13.25L10.75 26H8.25L16 8ZM16 12.75L19.1 19.5H12.9L16 12.75Z"
       />
     </mask>
   </defs>
@@ -24,7 +24,7 @@
     y="3"
     width="26"
     height="26"
-    rx="6"
+    rx="4"
     mask="url(#arkone-icon)"
   />
 </svg>
