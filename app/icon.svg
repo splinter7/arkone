@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <mask id="arkone-icon">
+      <rect width="32" height="32" fill="white" />
+      <path
+        fill="black"
+        fill-rule="evenodd"
+        d="M16 8.5L23.75 26H21.25L18.75 20.5H13.25L10.75 26H8.25L16 8.5ZM16 12.75L19.1 19.5H12.9L16 12.75Z"
+      />
+    </mask>
+  </defs>
+  <style>
+    .bg { fill: #ffffff; }
+    .vault { fill: #0f172a; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #0f172a; }
+      .vault { fill: #e2e8f0; }
+    }
+  </style>
+  <rect class="bg" width="32" height="32" rx="8" />
+  <rect
+    class="vault"
+    x="3"
+    y="3"
+    width="26"
+    height="26"
+    rx="6"
+    mask="url(#arkone-icon)"
+  />
+</svg>

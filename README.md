@@ -1,36 +1,121 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ArkOne — IPFS Media Upload & Retrieval
 
-## Getting Started
+A minimal Next.js app for uploading images, video, and audio to IPFS via Pinata, with an API-key-protected endpoint for signed playback URLs.
 
-First, run the development server:
+## Prerequisites
+
+1. [Pinata](https://pinata.cloud) account
+2. API JWT (Pinata → API Keys)
+3. Dedicated gateway subdomain (e.g. `yourname.mypinata.cloud`)
+
+## Setup
+
+```bash
+npm install
+cp .env.example .env.local
+```
+
+Edit `.env.local`:
+
+```env
+PINATA_JWT=your_jwt
+PINATA_GATEWAY=yourname.mypinata.cloud
+API_SECRET_KEY=your_long_random_secret
+LOG_LEVEL=info
+```
+
+Run the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) and enter your `API_SECRET_KEY` when prompted.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## API
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+API docs: [http://localhost:3000/docs](http://localhost:3000/docs)
 
-## Learn More
+All routes require:
 
-To learn more about Next.js, take a look at the following resources:
+```http
+Authorization: Bearer <API_SECRET_KEY>
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Upload (small files)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+curl -X POST http://localhost:3000/api/upload \
+  -H "Authorization: Bearer your_secret" \
+  -F "file=@photo.jpg"
+```
 
-## Deploy on Vercel
+### Presigned upload URL (large / video files)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+curl http://localhost:3000/api/upload/url \
+  -H "Authorization: Bearer your_secret"
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Upload directly to the returned URL, then register the CID:
+
+```bash
+curl -X POST http://localhost:3000/api/media/register \
+  -H "Authorization: Bearer your_secret" \
+  -H "Content-Type: application/json" \
+  -d '{"cid":"bafy...","name":"clip.mp4","mimeType":"video/mp4"}'
+```
+
+### List assets
+
+```bash
+curl http://localhost:3000/api/media \
+  -H "Authorization: Bearer your_secret"
+```
+
+### Get signed playback URL
+
+```bash
+curl http://localhost:3000/api/media/bafybeig... \
+  -H "Authorization: Bearer your_secret"
+```
+
+Response:
+
+```json
+{
+  "cid": "bafy...",
+  "name": "clip.mp4",
+  "mimeType": "video/mp4",
+  "category": "video",
+  "url": "https://gateway.mypinata.cloud/files/bafy...?signature=...",
+  "expiresIn": 3600
+}
+```
+
+## Tests
+
+```bash
+npm test          # watch mode
+npm run test:run  # single run (CI)
+```
+
+## Logging
+
+Server logs are structured JSON via `pino`. Set `LOG_LEVEL=debug` for verbose output locally.
+
+## Security notes
+
+- Never commit `.env.local` or `keys.txt`
+- `PINATA_JWT` stays server-side only
+- Playback URLs are time-limited signed gateway links
+
+### Windows TLS / upload 500 errors
+
+If uploads fail with `fetch failed` or `UNABLE_TO_VERIFY_LEAF_SIGNATURE`, Node.js cannot verify Pinata's HTTPS certificates on your machine (common on some Windows setups). For **local dev only**, set:
+
+```env
+PINATA_TLS_INSECURE=true
+```
+
+Restart the dev server after changing `.env.local`. This flag only takes effect when `NODE_ENV=development` and is ignored in production.
