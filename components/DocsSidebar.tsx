@@ -1,5 +1,7 @@
 "use client";
 
+import { navItemClass } from "@/lib/interactive";
+
 interface DocsTopic {
   id: string;
   label: string;
@@ -39,7 +41,7 @@ export function DocsSidebar({ topics }: DocsSidebarProps) {
               <button
                 type="button"
                 onClick={() => scrollToTopic(topic.id)}
-                className="w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm text-neutral-600 transition-colors duration-200 hover:text-blue-600 active:scale-[0.99] dark:text-neutral-400 dark:hover:text-blue-400"
+                className={navItemClass}
               >
                 {topic.label}
               </button>

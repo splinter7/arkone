@@ -1,6 +1,7 @@
 "use client";
 
 import { useTheme } from "./ThemeProvider";
+import { iconButtonClass } from "@/lib/interactive";
 
 function SunIcon() {
   return (
@@ -50,7 +51,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="rounded-full p-2 text-neutral-500 transition-colors duration-150 hover:bg-neutral-100 hover:text-neutral-900 active:scale-[0.97] dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+      className={iconButtonClass}
       aria-label={
         theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
       }

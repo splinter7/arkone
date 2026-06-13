@@ -15,6 +15,7 @@ import {
 } from "@/lib/api-client";
 import { ArkOneLogo } from "./ArkOneLogo";
 import { ThemeToggle } from "./ThemeToggle";
+import { actionLinkClass } from "@/lib/interactive";
 
 interface AuthContextValue {
   signOut: () => void;
@@ -105,67 +106,75 @@ export function ApiKeyGate({ children }: ApiKeyGateProps) {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center gap-6 px-6">
-      <div className="absolute right-6 top-6 animate-fade-in">
-        <ThemeToggle />
-      </div>
-      <div className="w-full max-w-md animate-fade-in-up space-y-4">
-        <ArkOneLogo size="sm" />
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          Enter your API secret to upload and retrieve IPFS media.
-        </p>
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const normalized = normalizeApiKey(input);
-            if (!normalized) return;
-
-            setSubmitting(true);
-            setError(null);
-
-            void validateApiKey(normalized).then((valid) => {
-              setSubmitting(false);
-              if (!valid) {
-                setError(
-                  "Invalid API secret. Use API_SECRET_KEY from .env.local, not PINATA_JWT.",
-                );
-                return;
-              }
-              storeApiKey(normalized);
-              setApiKey(normalized);
-            });
-          }}
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 py-16">
+      <header className="animate-fade-in flex items-start justify-end">
+        <nav
+          className="flex shrink-0 items-center gap-4"
+          aria-label="Login navigation"
         >
-          <label
-            className="text-sm text-neutral-600 dark:text-neutral-300"
-            htmlFor="api-key"
+          <ThemeToggle />
+        </nav>
+      </header>
+
+      <div className="flex flex-1 flex-col items-center justify-center">
+        <div className="w-full max-w-md animate-fade-in-up space-y-4">
+          <ArkOneLogo size="sm" />
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            Enter your API secret to upload and retrieve IPFS media.
+          </p>
+          <form
+            className="flex flex-col gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const normalized = normalizeApiKey(input);
+              if (!normalized) return;
+
+              setSubmitting(true);
+              setError(null);
+
+              void validateApiKey(normalized).then((valid) => {
+                setSubmitting(false);
+                if (!valid) {
+                  setError(
+                    "Invalid API secret. Use API_SECRET_KEY from .env.local, not PINATA_JWT.",
+                  );
+                  return;
+                }
+                storeApiKey(normalized);
+                setApiKey(normalized);
+              });
+            }}
           >
-            API secret
-          </label>
-          <input
-            id="api-key"
-            type="password"
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            className="border-b border-neutral-300 bg-transparent py-2 text-sm outline-none transition-colors duration-200 focus:border-neutral-900 dark:border-neutral-600 dark:focus:border-neutral-100"
-            placeholder="API_SECRET_KEY value"
-            autoComplete="off"
-            disabled={submitting}
-          />
-          {error ? (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-          ) : null}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="py-2 text-sm font-medium underline-offset-4 transition-transform duration-150 hover:underline active:scale-[0.98] disabled:opacity-50"
-          >
-            {submitting ? "Checking…" : "Continue"}
-          </button>
-        </form>
+            <label
+              className="text-sm text-neutral-600 dark:text-neutral-300"
+              htmlFor="api-key"
+            >
+              API secret
+            </label>
+            <input
+              id="api-key"
+              type="password"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              className="border-b border-neutral-300 bg-transparent py-2 text-sm outline-none transition-colors duration-200 focus:border-neutral-900 dark:border-neutral-600 dark:focus:border-neutral-100"
+              placeholder="API_SECRET_KEY value"
+              autoComplete="off"
+              disabled={submitting}
+            />
+            {error ? (
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            ) : null}
+            <button
+              type="submit"
+              disabled={submitting}
+              className={`py-2 text-sm font-medium ${actionLinkClass}`}
+            >
+              {submitting ? "Checking…" : "Continue"}
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
 

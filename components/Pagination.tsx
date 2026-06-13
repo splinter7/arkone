@@ -1,3 +1,5 @@
+import { textLinkClass } from "@/lib/interactive";
+
 interface PaginationProps {
   page: number;
   totalPages: number;
@@ -34,7 +36,7 @@ export function Pagination({
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="text-sm underline-offset-4 transition-colors duration-150 hover:underline active:scale-[0.98] disabled:cursor-not-allowed disabled:text-neutral-400 disabled:no-underline dark:disabled:text-neutral-600"
+          className={`${textLinkClass} disabled:text-neutral-400 dark:disabled:text-neutral-600`}
         >
           Previous
         </button>
@@ -47,7 +49,7 @@ export function Pagination({
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="text-sm underline-offset-4 transition-colors duration-150 hover:underline active:scale-[0.98] disabled:cursor-not-allowed disabled:text-neutral-400 disabled:no-underline dark:disabled:text-neutral-600"
+          className={`${textLinkClass} disabled:text-neutral-400 dark:disabled:text-neutral-600`}
         >
           Next
         </button>

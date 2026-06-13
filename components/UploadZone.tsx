@@ -8,6 +8,7 @@ import {
 } from "@/lib/media-types";
 import type { Asset } from "@/lib/types";
 import { xhrUpload } from "@/lib/upload-with-progress";
+import { primaryButtonClass } from "@/lib/interactive";
 import { useToast } from "./ToastProvider";
 
 interface UploadZoneProps {
@@ -208,7 +209,7 @@ export function UploadZone({ onUploaded, onUploadingChange }: UploadZoneProps) {
               Images, video, and audio files
             </p>
           </div>
-          <label className="cursor-pointer rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-medium text-neutral-50 transition-all duration-150 hover:bg-neutral-800 active:scale-[0.97] dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200">
+          <label className={primaryButtonClass}>
             Choose file
             <input
               type="file"

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { PreviewPreloader } from "./PreviewPreloader";
+import { iconButtonClass } from "@/lib/interactive";
 
 interface ImageLightboxProps {
   url: string;
@@ -63,7 +64,7 @@ export function ImageLightbox({
       <button
         type="button"
         onClick={onClose}
-        className="absolute right-4 top-4 z-10 rounded-full p-2 text-xl text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white sm:right-6 sm:top-6"
+        className={`${iconButtonClass} absolute right-4 top-4 z-10 text-xl text-white/70 hover:bg-white/10 hover:text-white sm:right-6 sm:top-6`}
         aria-label="Close lightbox"
       >
         ×

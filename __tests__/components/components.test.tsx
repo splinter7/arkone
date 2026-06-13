@@ -10,6 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { ApiKeyGate } from "@/components/ApiKeyGate";
 import { MediaPlayer } from "@/components/MediaPlayer";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import { ToastProvider, useToast } from "@/components/ToastProvider";
 import { UploadZone } from "@/components/UploadZone";
 import { API_KEY_STORAGE_KEY } from "@/lib/api-client";
@@ -196,5 +197,69 @@ describe("ToastProvider", () => {
     await user.click(screen.getByRole("button", { name: "Show toast" }));
 
     expect(screen.getByText("photo.jpg uploaded")).toBeInTheDocument();
+  });
+});
+
+describe("ScrollToTop", () => {
+  afterEach(() => {
+    cleanup();
+    Object.defineProperty(window, "scrollY", {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  it("appears after scrolling down and hides near the top", () => {
+    renderWithProviders(<ScrollToTop />);
+
+    const button = screen.getByRole("button", { name: "Scroll to top" });
+    expect(button.className).toContain("opacity-0");
+
+    Object.defineProperty(window, "scrollY", {
+      value: 400,
+      writable: true,
+      configurable: true,
+    });
+    fireEvent.scroll(window);
+
+    expect(button.className).toContain("opacity-100");
+
+    Object.defineProperty(window, "scrollY", {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+    fireEvent.scroll(window);
+
+    expect(button.className).toContain("opacity-0");
+  });
+
+  it("scrolls to the top when clicked", () => {
+    const scrollTo = vi.fn();
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    Object.defineProperty(window, "scrollTo", {
+      value: scrollTo,
+      writable: true,
+      configurable: true,
+    });
+    Object.defineProperty(window, "scrollY", {
+      value: 400,
+      writable: true,
+      configurable: true,
+    });
+
+    renderWithProviders(<ScrollToTop />);
+    fireEvent.scroll(window);
+
+    fireEvent.click(screen.getByRole("button", { name: "Scroll to top" }));
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
   });
 });

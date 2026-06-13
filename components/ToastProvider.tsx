@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { iconButtonClass } from "@/lib/interactive";
 
 type ToastVariant = "success" | "error";
 
@@ -61,7 +62,7 @@ function ToastItem({
       <button
         type="button"
         onClick={onDismiss}
-        className="shrink-0 text-neutral-400 transition-colors duration-150 hover:text-neutral-700 dark:hover:text-neutral-200"
+        className={`shrink-0 ${iconButtonClass} text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200`}
         aria-label="Dismiss notification"
       >
         ×

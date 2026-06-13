@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Asset } from "@/lib/types";
+import { iconButtonClass } from "@/lib/interactive";
 import { UploadZone } from "./UploadZone";
 
 interface UploadModalProps {
@@ -85,7 +86,7 @@ export function UploadModal({ open, onClose, onUploaded }: UploadModalProps) {
             type="button"
             onClick={handleClose}
             disabled={uploading}
-            className="rounded-full px-2 py-1 text-xl leading-none text-neutral-400 transition-colors duration-150 hover:bg-neutral-200 hover:text-neutral-700 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+            className={`${iconButtonClass} px-2 py-1 text-xl leading-none text-neutral-400 hover:text-neutral-700 disabled:cursor-wait disabled:opacity-50 dark:hover:text-neutral-200`}
             aria-label="Close upload dialog"
           >
             ×

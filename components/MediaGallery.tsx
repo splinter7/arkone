@@ -12,6 +12,7 @@ import {
 } from "@/lib/pagination";
 import type { Asset } from "@/lib/types";
 import { staggerDelay } from "@/lib/motion";
+import { actionLinkClass, interactiveBase } from "@/lib/interactive";
 import { MediaPlayer } from "./MediaPlayer";
 import { Pagination } from "./Pagination";
 import { PreviewPreloader } from "./PreviewPreloader";
@@ -47,6 +48,24 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "oldest", label: "Oldest" },
   { value: "name", label: "Name" },
 ];
+
+function SearchIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+  );
+}
 
 async function fetchPlaybackUrl(
   cid: string,
@@ -203,8 +222,6 @@ function GallerySkeleton() {
   );
 }
 
-const actionButtonClass =
-  "underline-offset-4 transition-all duration-150 hover:underline active:scale-[0.98] disabled:cursor-wait disabled:opacity-50";
 
 export function MediaGallery({ refreshKey }: MediaGalleryProps) {
   const toast = useToast();
@@ -535,14 +552,22 @@ export function MediaGallery({ refreshKey }: MediaGalleryProps) {
 
       {!loading && assets.length > 0 && (
         <div className="animate-fade-in flex flex-col gap-4">
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search by name, CID, or type…"
-            className="w-full border-b border-neutral-300 bg-transparent py-2 text-sm outline-none transition-colors duration-200 focus:border-neutral-900 dark:border-neutral-600 dark:focus:border-neutral-100"
-            aria-label="Search assets"
-          />
+          <div className="relative">
+            <span
+              className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500"
+              aria-hidden="true"
+            >
+              <SearchIcon />
+            </span>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search by name, CID, or type…"
+              className="w-full border-b border-neutral-300 bg-transparent py-2 pl-7 text-sm outline-none transition-colors duration-200 focus:border-neutral-900 dark:border-neutral-600 dark:focus:border-neutral-100"
+              aria-label="Search assets"
+            />
+          </div>
 
           <div className="flex flex-wrap items-center gap-4">
             <div
@@ -555,7 +580,7 @@ export function MediaGallery({ refreshKey }: MediaGalleryProps) {
                   key={filter.value}
                   type="button"
                   onClick={() => setCategoryFilter(filter.value)}
-                  className={`rounded-full px-3 py-1 text-xs transition-all duration-200 active:scale-[0.97] ${
+                  className={`rounded-full px-3 py-1 text-xs ${interactiveBase} active:scale-[0.97] ${
                     categoryFilter === filter.value
                       ? "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
                       : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
@@ -637,7 +662,7 @@ export function MediaGallery({ refreshKey }: MediaGalleryProps) {
                 <div className="flex flex-wrap gap-4 pt-1 text-sm">
                 <button
                   type="button"
-                  className={actionButtonClass}
+                  className={actionLinkClass}
                   onClick={() => handlePreview(asset)}
                   disabled={loadingCid === asset.cid}
                 >
@@ -649,7 +674,7 @@ export function MediaGallery({ refreshKey }: MediaGalleryProps) {
                 </button>
                 <button
                   type="button"
-                  className={actionButtonClass}
+                  className={actionLinkClass}
                   onClick={() => copyPlaybackUrl(asset)}
                 >
                   {getCopyUrlLabel(asset.category)}
@@ -658,7 +683,7 @@ export function MediaGallery({ refreshKey }: MediaGalleryProps) {
                   <span className="animate-fade-in flex flex-wrap gap-4">
                     <button
                       type="button"
-                      className={`${actionButtonClass} text-red-600 dark:text-red-400`}
+                      className={`${actionLinkClass} text-red-600 dark:text-red-400`}
                       onClick={() => deleteAsset(asset)}
                       disabled={deletingCid === asset.cid}
                     >
@@ -666,7 +691,7 @@ export function MediaGallery({ refreshKey }: MediaGalleryProps) {
                     </button>
                     <button
                       type="button"
-                      className={actionButtonClass}
+                      className={actionLinkClass}
                       onClick={() => setConfirmDeleteCid(null)}
                       disabled={deletingCid === asset.cid}
                     >
@@ -676,7 +701,7 @@ export function MediaGallery({ refreshKey }: MediaGalleryProps) {
                 ) : (
                   <button
                     type="button"
-                    className={`${actionButtonClass} text-red-600 dark:text-red-400`}
+                    className={`${actionLinkClass} text-red-600 dark:text-red-400`}
                     onClick={() => setConfirmDeleteCid(asset.cid)}
                   >
                     Delete
