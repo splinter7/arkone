@@ -85,6 +85,139 @@ describe("ApiKeyGate", () => {
       ).toBeInTheDocument();
     });
     expect(screen.queryByText("Protected content")).not.toBeInTheDocument();
+    expect(sessionStorage.getItem(API_KEY_STORAGE_KEY)).toBeNull();
+  });
+
+  it("allows signing in after a failed attempt", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((_url, init) => {
+      const headers = new Headers(init?.headers);
+      const token = headers.get("Authorization");
+
+      if (token === "Bearer wrong-secret") {
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }),
+        );
+      }
+
+      return Promise.resolve(
+        new Response(JSON.stringify({ assets: [] }), { status: 200 }),
+      );
+    });
+
+    renderWithProviders(
+      <ApiKeyGate>
+        <p>Protected content</p>
+      </ApiKeyGate>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("API secret")).toBeInTheDocument();
+    });
+
+    const input = screen.getByLabelText("API secret");
+    await user.type(input, "wrong-secret");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Invalid API secret/i)).toBeInTheDocument();
+    });
+
+    await user.clear(input);
+    await user.type(input, "correct-secret");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Protected content")).toBeInTheDocument();
+    });
+
+    expect(sessionStorage.getItem(API_KEY_STORAGE_KEY)).toBe("correct-secret");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/media", {
+      method: "GET",
+      headers: { Authorization: "Bearer correct-secret" },
+      cache: "no-store",
+    });
+  });
+
+  it("recovers from network errors during validation", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    fetchMock
+      .mockRejectedValueOnce(new Error("Network error"))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ assets: [] }), { status: 200 }),
+      );
+
+    renderWithProviders(
+      <ApiKeyGate>
+        <p>Protected content</p>
+      </ApiKeyGate>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("API secret")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByLabelText("API secret"), "my-secret");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Could not verify API secret/i),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Protected content")).toBeInTheDocument();
+    });
+  });
+
+  it("ignores stale validation results from earlier submissions", async () => {
+    const user = userEvent.setup();
+    let rejectFirst!: (reason?: unknown) => void;
+    const firstAttempt = new Promise<Response>((_, reject) => {
+      rejectFirst = reject;
+    });
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    fetchMock
+      .mockImplementationOnce(() => firstAttempt)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ assets: [] }), { status: 200 }),
+      );
+
+    renderWithProviders(
+      <ApiKeyGate>
+        <p>Protected content</p>
+      </ApiKeyGate>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("API secret")).toBeInTheDocument();
+    });
+
+    const input = screen.getByLabelText("API secret");
+    await user.type(input, "wrong-secret");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    await user.clear(input);
+    await user.type(input, "correct-secret");
+    await user.click(screen.getByRole("button", { name: /checking/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Protected content")).toBeInTheDocument();
+    });
+
+    rejectFirst(new Error("Network error"));
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Invalid API secret/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Could not verify API secret/i)).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("Protected content")).toBeInTheDocument();
   });
 });
 

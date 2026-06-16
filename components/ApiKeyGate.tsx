@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import {
@@ -54,6 +55,7 @@ export function ApiKeyGate({ children }: ApiKeyGateProps) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [ready, setReady] = useState(false);
+  const submissionRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,19 +68,25 @@ export function ApiKeyGate({ children }: ApiKeyGateProps) {
       }
 
       const normalized = normalizeApiKey(stored);
-      if (normalized !== stored) {
-        storeApiKey(normalized);
-      }
 
-      const valid = await validateApiKey(normalized);
-      if (cancelled) return;
+      try {
+        const valid = await validateApiKey(normalized);
+        if (cancelled) return;
 
-      if (valid) {
-        setApiKey(normalized);
-      } else {
+        if (valid) {
+          if (normalized !== stored) {
+            storeApiKey(normalized);
+          }
+          setApiKey(normalized);
+        } else {
+          sessionStorage.removeItem(API_KEY_STORAGE_KEY);
+        }
+      } catch {
+        if (cancelled) return;
         sessionStorage.removeItem(API_KEY_STORAGE_KEY);
+      } finally {
+        if (!cancelled) setReady(true);
       }
-      setReady(true);
     }
 
     void restoreSession();
@@ -91,6 +99,44 @@ export function ApiKeyGate({ children }: ApiKeyGateProps) {
     sessionStorage.removeItem(API_KEY_STORAGE_KEY);
     setApiKey(null);
     setInput("");
+    setError(null);
+    submissionRef.current += 1;
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const normalized = normalizeApiKey(input);
+    if (!normalized) return;
+
+    const submissionId = ++submissionRef.current;
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const valid = await validateApiKey(normalized);
+      if (submissionId !== submissionRef.current) return;
+
+      if (!valid) {
+        sessionStorage.removeItem(API_KEY_STORAGE_KEY);
+        setError(
+          "Invalid API secret. Use API_SECRET_KEY from .env.local, not PINATA_JWT.",
+        );
+        return;
+      }
+
+      storeApiKey(normalized);
+      setApiKey(normalized);
+    } catch {
+      if (submissionId !== submissionRef.current) return;
+      sessionStorage.removeItem(API_KEY_STORAGE_KEY);
+      setError(
+        "Could not verify API secret. Check your connection and try again.",
+      );
+    } finally {
+      if (submissionId === submissionRef.current) {
+        setSubmitting(false);
+      }
+    }
   }
 
   if (!ready) {
@@ -107,44 +153,16 @@ export function ApiKeyGate({ children }: ApiKeyGateProps) {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 py-16">
-      <header className="animate-fade-in flex items-start justify-end">
-        <nav
-          className="flex shrink-0 items-center gap-4"
-          aria-label="Login navigation"
-        >
-          <ThemeToggle />
-        </nav>
-      </header>
-
       <div className="flex flex-1 flex-col items-center justify-center">
         <div className="w-full max-w-md animate-fade-in-up space-y-4">
-          <ArkOneLogo size="sm" />
+          <div className="flex items-center justify-between gap-4">
+            <ArkOneLogo size="sm" />
+            <ThemeToggle />
+          </div>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
             Enter your API secret to upload and retrieve IPFS media.
           </p>
-          <form
-            className="flex flex-col gap-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const normalized = normalizeApiKey(input);
-              if (!normalized) return;
-
-              setSubmitting(true);
-              setError(null);
-
-              void validateApiKey(normalized).then((valid) => {
-                setSubmitting(false);
-                if (!valid) {
-                  setError(
-                    "Invalid API secret. Use API_SECRET_KEY from .env.local, not PINATA_JWT.",
-                  );
-                  return;
-                }
-                storeApiKey(normalized);
-                setApiKey(normalized);
-              });
-            }}
-          >
+          <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
             <label
               className="text-sm text-neutral-600 dark:text-neutral-300"
               htmlFor="api-key"
@@ -155,19 +173,22 @@ export function ApiKeyGate({ children }: ApiKeyGateProps) {
               id="api-key"
               type="password"
               value={input}
-              onChange={(event) => setInput(event.target.value)}
+              onChange={(event) => {
+                setInput(event.target.value);
+                if (error) setError(null);
+              }}
               className="border-b border-neutral-300 bg-transparent py-2 text-sm outline-none transition-colors duration-200 focus:border-neutral-900 dark:border-neutral-600 dark:focus:border-neutral-100"
               placeholder="API_SECRET_KEY value"
               autoComplete="off"
-              disabled={submitting}
             />
             {error ? (
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             ) : null}
             <button
               type="submit"
-              disabled={submitting}
-              className={`py-2 text-sm font-medium ${actionLinkClass}`}
+              className={`py-2 text-sm font-medium ${actionLinkClass} ${
+                submitting ? "cursor-wait opacity-50" : ""
+              }`}
             >
               {submitting ? "Checking…" : "Continue"}
             </button>

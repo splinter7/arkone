@@ -3,6 +3,8 @@ import { requireAuth } from "@/lib/api-auth";
 import { readAssets } from "@/lib/assets";
 import { createRequestLogger, logRequestComplete } from "@/lib/logger";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   const startMs = Date.now();
   const { log } = createRequestLogger("/api/media", request);

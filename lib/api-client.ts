@@ -16,7 +16,9 @@ export function normalizeApiKey(input: string): string {
 
 export async function validateApiKey(key: string): Promise<boolean> {
   const response = await fetch("/api/media", {
+    method: "GET",
     headers: { Authorization: `Bearer ${key}` },
+    cache: "no-store",
   });
   return response.ok;
 }

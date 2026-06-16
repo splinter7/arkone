@@ -18,6 +18,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ArkOne — IPFS Media",
   description: "Upload and retrieve media on IPFS via Pinata",
+  openGraph: {
+    title: "ArkOne — IPFS Media",
+    description: "Upload and retrieve media on IPFS via Pinata",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ArkOne — IPFS Media",
+    description: "Upload and retrieve media on IPFS via Pinata",
+  },
 };
 
 const themeScript = `(function(){try{var s=localStorage.getItem("arkone_theme");var d=s==="dark"||(!s&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("dark")}catch(e){}})()`;

@@ -13,7 +13,10 @@ interface MediaPlayerProps {
 }
 
 const mediaClassName =
-  "max-h-80 w-full object-contain transition-opacity duration-300";
+  "block max-h-80 max-w-full object-contain transition-opacity duration-300";
+
+const loadedFrameClassName =
+  "overflow-hidden rounded-xl border border-neutral-200/80 bg-neutral-50/40 shadow-sm dark:border-neutral-800/80 dark:bg-neutral-900/30";
 
 export function MediaPlayer({
   url,
@@ -36,7 +39,11 @@ export function MediaPlayer({
   }, []);
 
   return (
-    <div className="relative min-h-80 w-full">
+    <div
+      className={`relative flex w-full justify-center transition-[min-height] duration-300 ease-out ${
+        ready ? "min-h-0" : "min-h-80"
+      }`}
+    >
       {!ready && <PreviewPreloader className="absolute inset-0" />}
       {category === "image" && (
         <>
@@ -44,8 +51,10 @@ export function MediaPlayer({
             type="button"
             onClick={() => setLightboxOpen(true)}
             disabled={!ready}
-            className={`group relative block w-full text-left transition-opacity duration-300 ${
-              ready ? "cursor-zoom-in opacity-100" : "cursor-default opacity-0"
+            className={`group relative text-left transition-opacity duration-300 ${
+              ready
+                ? `cursor-zoom-in opacity-100 ${loadedFrameClassName}`
+                : "pointer-events-none absolute inset-0 opacity-0"
             }`}
             aria-label={`Open ${name} in lightbox`}
           >
@@ -74,8 +83,10 @@ export function MediaPlayer({
         <video
           src={url}
           controls
-          className={`max-h-80 w-full transition-opacity duration-300 ${
-            ready ? "opacity-100" : "opacity-0"
+          className={`max-h-80 max-w-full transition-opacity duration-300 ${
+            ready
+              ? `opacity-100 ${loadedFrameClassName}`
+              : "pointer-events-none absolute inset-0 h-full w-full opacity-0"
           }`}
           preload="metadata"
           onLoadedData={handleReady}
@@ -84,8 +95,10 @@ export function MediaPlayer({
       )}
       {category === "audio" && (
         <div
-          className={`flex min-h-80 items-center transition-opacity duration-300 ${
-            ready ? "opacity-100" : "opacity-0"
+          className={`w-full max-w-md transition-opacity duration-300 ${
+            ready
+              ? `opacity-100 ${loadedFrameClassName} px-4 py-5`
+              : "pointer-events-none absolute inset-0 flex items-center opacity-0"
           }`}
         >
           <audio

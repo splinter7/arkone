@@ -126,6 +126,25 @@ function AudioIcon() {
   );
 }
 
+function ImageIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-6 w-6"
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="M21 15l-5-5L5 21" />
+    </svg>
+  );
+}
+
 function ThumbnailPlaceholder({ category }: { category: MediaCategory }) {
   if (category === "video") {
     return (
@@ -151,10 +170,10 @@ function ThumbnailPlaceholder({ category }: { category: MediaCategory }) {
 
   return (
     <div
-      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-[10px] font-medium tracking-wider text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500"
+      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500"
       aria-hidden="true"
     >
-      IMG
+      <ImageIcon />
     </div>
   );
 }
@@ -163,34 +182,54 @@ function AssetThumbnail({
   asset,
   thumbnail,
   loading,
+  onClick,
+  previewLoading,
+  isExpanded,
 }: {
   asset: Asset;
   thumbnail?: ThumbnailState;
   loading: boolean;
+  onClick: () => void;
+  previewLoading: boolean;
+  isExpanded: boolean;
 }) {
-  if (asset.category === "video" || asset.category === "audio") {
-    return <ThumbnailPlaceholder category={asset.category} />;
-  }
+  const previewLabel = isExpanded
+    ? `Hide preview for ${asset.name}`
+    : `Preview ${asset.name}`;
 
-  if (loading) {
-    return (
+  let content: React.ReactNode;
+  if (asset.category === "video" || asset.category === "audio") {
+    content = <ThumbnailPlaceholder category={asset.category} />;
+  } else if (loading) {
+    content = (
       <div
-        className="h-16 w-16 shrink-0 animate-shimmer rounded-md"
+        className="h-16 w-16 animate-shimmer rounded-md"
         aria-hidden="true"
+      />
+    );
+  } else if (!thumbnail?.url) {
+    content = <ThumbnailPlaceholder category={asset.category} />;
+  } else {
+    content = (
+      <img
+        src={thumbnail.url}
+        alt=""
+        className="h-16 w-16 rounded-md object-cover bg-neutral-100 dark:bg-neutral-800"
       />
     );
   }
 
-  if (!thumbnail?.url) {
-    return <ThumbnailPlaceholder category={asset.category} />;
-  }
-
   return (
-    <img
-      src={thumbnail.url}
-      alt=""
-      className="h-16 w-16 shrink-0 rounded-md object-cover bg-neutral-100 dark:bg-neutral-800"
-    />
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={previewLoading}
+      aria-label={previewLabel}
+      aria-expanded={isExpanded}
+      className={`${interactiveBase} shrink-0 rounded-md transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-400 disabled:cursor-wait disabled:opacity-50`}
+    >
+      {content}
+    </button>
   );
 }
 
@@ -650,6 +689,9 @@ export function MediaGallery({ refreshKey }: MediaGalleryProps) {
                 asset={asset}
                 thumbnail={thumbnails[asset.cid]}
                 loading={loadingThumbnailCids.has(asset.cid)}
+                onClick={() => handlePreview(asset)}
+                previewLoading={loadingCid === asset.cid}
+                isExpanded={isExpanded}
               />
               <div className="min-w-0 flex-1 space-y-1">
                 <p className="font-medium">{asset.name}</p>
@@ -721,7 +763,7 @@ export function MediaGallery({ refreshKey }: MediaGalleryProps) {
                     ref={(element) => {
                       previewContentRefs.current[asset.cid] = element;
                     }}
-                    className="relative min-h-80 w-full scroll-mt-6 animate-fade-in-up"
+                    className="relative scroll-mt-6 animate-fade-in-up"
                   >
                     {loadingCid === asset.cid && (
                       <PreviewPreloader label="Fetching playback URL…" />
