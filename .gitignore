@@ -41,6 +41,10 @@ arkone-keys.txt
 # vercel
 .vercel
 
+# local sqlite database
+data/*.db
+data/*.db-journal
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

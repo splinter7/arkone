@@ -1,39 +1,31 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { promises as fs } from "fs";
-import path from "path";
-import os from "os";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   addAsset,
-  clearAssetsFilePath,
   findAssetByCid,
   readAssets,
   removeAssetByCid,
-  setAssetsFilePath,
+  updateAssetByCid,
 } from "@/lib/assets";
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
+} from "@/lib/db/test-utils";
 
 describe("assets", () => {
-  let tempDir: string;
+  beforeEach(async () => {
+    await setupTestDatabase();
+  });
 
   afterEach(async () => {
-    clearAssetsFilePath();
-    if (tempDir) {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    }
+    await teardownTestDatabase();
   });
 
   it("reads empty store", async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "arkone-assets-"));
-    setAssetsFilePath(path.join(tempDir, "assets.json"));
-
     const assets = await readAssets();
     expect(assets).toEqual([]);
   });
 
   it("adds and finds assets", async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "arkone-assets-"));
-    const filePath = path.join(tempDir, "assets.json");
-    setAssetsFilePath(filePath);
-
     const asset = await addAsset({
       cid: "bafytest",
       name: "photo.jpg",
@@ -49,15 +41,9 @@ describe("assets", () => {
 
     const found = await findAssetByCid("bafytest");
     expect(found?.name).toBe("photo.jpg");
-
-    const raw = await fs.readFile(filePath, "utf-8");
-    expect(raw).toContain("bafytest");
   });
 
   it("removes assets by cid", async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "arkone-assets-"));
-    setAssetsFilePath(path.join(tempDir, "assets.json"));
-
     await addAsset({
       cid: "bafytest",
       name: "photo.jpg",
@@ -72,5 +58,85 @@ describe("assets", () => {
 
     const missing = await removeAssetByCid("bafytest");
     expect(missing).toBe(false);
+  });
+
+  it("merges optional fields on duplicate cid without overwriting existing values", async () => {
+    await addAsset({
+      cid: "bafytest",
+      name: "photo.jpg",
+      mimeType: "image/jpeg",
+      category: "image",
+      uploadedAt: "2026-01-01T00:00:00.000Z",
+      pinataFileId: "existing-file-id",
+      thumbnailCid: "existing-thumb",
+      thumbnailPinataFileId: "existing-thumb-id",
+    });
+
+    const merged = await addAsset({
+      cid: "bafytest",
+      name: "photo-renamed.jpg",
+      mimeType: "image/jpeg",
+      category: "image",
+      uploadedAt: "2026-01-02T00:00:00.000Z",
+    });
+
+    expect(merged.name).toBe("photo-renamed.jpg");
+    expect(merged.pinataFileId).toBe("existing-file-id");
+    expect(merged.thumbnailCid).toBe("existing-thumb");
+    expect(merged.thumbnailPinataFileId).toBe("existing-thumb-id");
+    expect(await readAssets()).toHaveLength(1);
+  });
+
+  it("is a no-op when upsert data is unchanged", async () => {
+    const original = await addAsset({
+      cid: "bafytest",
+      name: "photo.jpg",
+      mimeType: "image/jpeg",
+      category: "image",
+      uploadedAt: "2026-01-01T00:00:00.000Z",
+      pinataFileId: "file-id",
+    });
+
+    const again = await addAsset({
+      cid: "bafytest",
+      name: "photo.jpg",
+      mimeType: "image/jpeg",
+      category: "image",
+      uploadedAt: "2026-01-01T00:00:00.000Z",
+      pinataFileId: "file-id",
+    });
+
+    expect(again).toEqual(original);
+    expect(await readAssets()).toHaveLength(1);
+  });
+
+  it("returns stable insertion order by uploadedAt", async () => {
+    await addAsset({
+      cid: "bafy-second",
+      name: "second.jpg",
+      mimeType: "image/jpeg",
+      category: "image",
+      uploadedAt: "2026-01-02T00:00:00.000Z",
+    });
+    await addAsset({
+      cid: "bafy-first",
+      name: "first.jpg",
+      mimeType: "image/jpeg",
+      category: "image",
+      uploadedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const listed = await readAssets();
+    expect(listed.map((asset) => asset.cid)).toEqual([
+      "bafy-first",
+      "bafy-second",
+    ]);
+  });
+
+  it("returns null when updating unknown cid", async () => {
+    const updated = await updateAssetByCid("missing", {
+      thumbnailCid: "bafythumb",
+    });
+    expect(updated).toBeNull();
   });
 });

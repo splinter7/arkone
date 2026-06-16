@@ -1,25 +1,15 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { promises as fs } from "fs";
-import path from "path";
-import os from "os";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   addAsset,
-  clearAssetsFilePath,
-  setAssetsFilePath,
   updateAssetByCid,
 } from "@/lib/assets";
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
+} from "@/lib/db/test-utils";
 import { generateImageThumbnail } from "@/lib/thumbnails";
 
 describe("thumbnails", () => {
-  let tempDir: string;
-
-  afterEach(async () => {
-    clearAssetsFilePath();
-    if (tempDir) {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    }
-  });
-
   it("generates a webp thumbnail from a png buffer", async () => {
     const png = Buffer.from(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
@@ -34,19 +24,15 @@ describe("thumbnails", () => {
 });
 
 describe("assets updateAssetByCid", () => {
-  let tempDir: string;
+  beforeEach(async () => {
+    await setupTestDatabase();
+  });
 
   afterEach(async () => {
-    clearAssetsFilePath();
-    if (tempDir) {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    }
+    await teardownTestDatabase();
   });
 
   it("updates thumbnail fields", async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "arkone-assets-"));
-    setAssetsFilePath(path.join(tempDir, "assets.json"));
-
     await addAsset({
       cid: "bafytest",
       name: "photo.jpg",

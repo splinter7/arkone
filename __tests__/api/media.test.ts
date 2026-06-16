@@ -1,13 +1,10 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
-import os from "os";
+import { addAsset } from "@/lib/assets";
 import {
-  clearAssetsFilePath,
-  setAssetsFilePath,
-  addAsset,
-} from "@/lib/assets";
+  setupTestDatabase,
+  teardownTestDatabase,
+} from "@/lib/db/test-utils";
 
 vi.mock("@/lib/pinata", () => ({
   getPinata: vi.fn(),
@@ -56,20 +53,14 @@ import {
 const authHeader = { authorization: "Bearer test_secret_key" };
 
 describe("API routes", () => {
-  let tempDir: string;
-
-  afterEach(async () => {
-    clearAssetsFilePath();
-    vi.clearAllMocks();
-    if (tempDir) {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    }
+  beforeEach(async () => {
+    await setupTestDatabase();
   });
 
-  async function setupAssetsStore() {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "arkone-api-"));
-    setAssetsFilePath(path.join(tempDir, "assets.json"));
-  }
+  afterEach(async () => {
+    await teardownTestDatabase();
+    vi.clearAllMocks();
+  });
 
   it("POST /api/upload rejects unauthorized requests", async () => {
     const request = new NextRequest("http://localhost/api/upload", {
@@ -80,8 +71,6 @@ describe("API routes", () => {
   });
 
   it("POST /api/upload uploads valid media and generates thumbnail", async () => {
-    await setupAssetsStore();
-
     vi.mocked(getPinata).mockReturnValue({
       upload: {
         public: {
@@ -113,8 +102,6 @@ describe("API routes", () => {
   });
 
   it("POST /api/upload rejects invalid mime type", async () => {
-    await setupAssetsStore();
-
     const file = new File(["text"], "notes.txt", { type: "text/plain" });
     const formData = new FormData();
     formData.append("file", file);
@@ -151,8 +138,6 @@ describe("API routes", () => {
   });
 
   it("GET /api/media lists assets", async () => {
-    await setupAssetsStore();
-
     const registerRequest = new NextRequest(
       "http://localhost/api/media/register",
       {
@@ -182,8 +167,6 @@ describe("API routes", () => {
   });
 
   it("GET /api/media/[cid] returns signed playback URL", async () => {
-    await setupAssetsStore();
-
     const registerRequest = new NextRequest(
       "http://localhost/api/media/register",
       {
@@ -219,8 +202,6 @@ describe("API routes", () => {
   });
 
   it("GET /api/media/[cid] returns 404 for unknown cid", async () => {
-    await setupAssetsStore();
-
     const request = new NextRequest("http://localhost/api/media/missing", {
       headers: authHeader,
     });
@@ -232,8 +213,6 @@ describe("API routes", () => {
   });
 
   it("GET /api/media/[cid]/thumbnail returns signed thumbnail URL", async () => {
-    await setupAssetsStore();
-
     await addAsset({
       cid: "bafyimage",
       name: "photo.jpg",
@@ -262,8 +241,6 @@ describe("API routes", () => {
   });
 
   it("POST /api/media/[cid]/thumbnail generates thumbnail", async () => {
-    await setupAssetsStore();
-
     await addAsset({
       cid: "bafygen",
       name: "photo.jpg",
@@ -294,8 +271,6 @@ describe("API routes", () => {
   });
 
   it("DELETE /api/media/[cid] deletes asset from Pinata and registry", async () => {
-    await setupAssetsStore();
-
     const registerRequest = new NextRequest(
       "http://localhost/api/media/register",
       {
@@ -342,8 +317,6 @@ describe("API routes", () => {
   });
 
   it("DELETE /api/media/[cid] deletes thumbnail when present", async () => {
-    await setupAssetsStore();
-
     await addAsset({
       cid: "bafywiththumb",
       name: "photo.jpg",
@@ -379,8 +352,6 @@ describe("API routes", () => {
   });
 
   it("DELETE /api/media/[cid] returns 404 for unknown cid", async () => {
-    await setupAssetsStore();
-
     const request = new NextRequest("http://localhost/api/media/missing", {
       method: "DELETE",
       headers: authHeader,
@@ -393,8 +364,6 @@ describe("API routes", () => {
   });
 
   it("POST /api/media/register validates required fields", async () => {
-    await setupAssetsStore();
-
     const request = new NextRequest("http://localhost/api/media/register", {
       method: "POST",
       headers: {

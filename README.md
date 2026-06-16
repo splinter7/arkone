@@ -93,6 +93,47 @@ Response:
 }
 ```
 
+## Database
+
+Asset metadata is stored in SQLite via [Drizzle ORM](https://orm.drizzle.team/) and [libSQL](https://github.com/tursodatabase/libsql).
+
+### Local development
+
+No extra setup is required. On first use the app creates `data/local.db` automatically. You can override the path with:
+
+```env
+DATABASE_URL=file:./data/local.db
+```
+
+### Production (Vercel + Turso)
+
+For serverless deploys, use [Turso](https://turso.tech) so the database persists across requests:
+
+1. Install the [Turso CLI](https://docs.turso.tech/cli/introduction) and sign in
+2. Create a database: `turso db create arkone`
+3. Create an auth token: `turso db tokens create arkone`
+4. Get the database URL: `turso db show arkone --url`
+5. Set these in your Vercel project environment:
+   - `TURSO_DATABASE_URL` — the `libsql://...` URL
+   - `TURSO_AUTH_TOKEN` — the token from step 3
+
+Migrations run automatically during `npm run build` and on first app startup.
+
+### Migrate existing `assets.json`
+
+If you have assets in `data/assets.json` from before the database migration:
+
+```bash
+npm run db:import-json
+```
+
+### Manual migrations
+
+```bash
+npm run db:generate   # after schema changes
+npm run db:migrate    # apply pending migrations
+```
+
 ## Tests
 
 ```bash

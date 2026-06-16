@@ -1,85 +1,73 @@
-import { promises as fs } from "fs";
-import path from "path";
+import { asc, eq } from "drizzle-orm";
+import { getDb } from "./db/client";
+import { assetToRow, assetsTable, rowToAsset } from "./db/schema";
 import type { Asset } from "./types";
 
-const DEFAULT_ASSETS_PATH = path.join(
-  /* turbopackIgnore: true */ process.cwd(),
-  "data",
-  "assets.json",
-);
-
-function getAssetsPath(): string {
-  return process.env.ASSETS_FILE_PATH ?? DEFAULT_ASSETS_PATH;
-}
-
-async function ensureAssetsFile(): Promise<void> {
-  const filePath = getAssetsPath();
-  const dir = path.dirname(filePath);
-
-  await fs.mkdir(dir, { recursive: true });
-
-  try {
-    await fs.access(filePath);
-  } catch {
-    await fs.writeFile(filePath, "[]", "utf-8");
-  }
-}
-
 export async function readAssets(): Promise<Asset[]> {
-  await ensureAssetsFile();
-  const raw = await fs.readFile(getAssetsPath(), "utf-8");
-  const parsed = JSON.parse(raw) as Asset[];
-  return Array.isArray(parsed) ? parsed : [];
+  const db = await getDb();
+  const rows = await db
+    .select()
+    .from(assetsTable)
+    .orderBy(asc(assetsTable.uploadedAt));
+
+  return rows.map(rowToAsset);
 }
 
-export async function writeAssets(assets: Asset[]): Promise<void> {
-  await ensureAssetsFile();
-  await fs.writeFile(getAssetsPath(), JSON.stringify(assets, null, 2), "utf-8");
+function mergeAsset(existing: Asset, incoming: Asset): Asset {
+  return {
+    ...existing,
+    ...incoming,
+    pinataFileId: incoming.pinataFileId ?? existing.pinataFileId,
+    thumbnailCid: incoming.thumbnailCid ?? existing.thumbnailCid,
+    thumbnailPinataFileId:
+      incoming.thumbnailPinataFileId ?? existing.thumbnailPinataFileId,
+  };
+}
+
+function assetsEqual(left: Asset, right: Asset): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 export async function addAsset(asset: Asset): Promise<Asset> {
-  const assets = await readAssets();
-  const existingIndex = assets.findIndex((item) => item.cid === asset.cid);
+  const db = await getDb();
+  const existing = await findAssetByCid(asset.cid);
 
-  if (existingIndex !== -1) {
-    const existing = assets[existingIndex];
-    const merged = {
-      ...existing,
-      ...asset,
-      pinataFileId: asset.pinataFileId ?? existing.pinataFileId,
-      thumbnailCid: asset.thumbnailCid ?? existing.thumbnailCid,
-      thumbnailPinataFileId:
-        asset.thumbnailPinataFileId ?? existing.thumbnailPinataFileId,
-    };
+  if (existing) {
+    const merged = mergeAsset(existing, asset);
 
-    if (JSON.stringify(merged) !== JSON.stringify(existing)) {
-      assets[existingIndex] = merged;
-      await writeAssets(assets);
+    if (!assetsEqual(merged, existing)) {
+      await db
+        .update(assetsTable)
+        .set(assetToRow(merged))
+        .where(eq(assetsTable.cid, asset.cid));
     }
 
-    return assets[existingIndex];
+    return merged;
   }
 
-  assets.push(asset);
-  await writeAssets(assets);
+  await db.insert(assetsTable).values(assetToRow(asset));
   return asset;
 }
 
 export async function removeAssetByCid(cid: string): Promise<boolean> {
-  const assets = await readAssets();
-  const nextAssets = assets.filter((item) => item.cid !== cid);
+  const db = await getDb();
+  const deleted = await db
+    .delete(assetsTable)
+    .where(eq(assetsTable.cid, cid))
+    .returning({ cid: assetsTable.cid });
 
-  if (nextAssets.length === assets.length) {
-    return false;
-  }
-
-  await writeAssets(nextAssets);
-  return true;
+  return deleted.length > 0;
 }
 
 export async function findAssetByCid(cid: string): Promise<Asset | null> {
-  const assets = await readAssets();
-  return assets.find((item) => item.cid === cid) ?? null;
+  const db = await getDb();
+  const rows = await db
+    .select()
+    .from(assetsTable)
+    .where(eq(assetsTable.cid, cid))
+    .limit(1);
+
+  return rows[0] ? rowToAsset(rows[0]) : null;
 }
 
 export async function updateAssetByCid(
@@ -88,22 +76,19 @@ export async function updateAssetByCid(
     Pick<Asset, "thumbnailCid" | "thumbnailPinataFileId" | "pinataFileId">
   >,
 ): Promise<Asset | null> {
-  const assets = await readAssets();
-  const index = assets.findIndex((item) => item.cid === cid);
+  const existing = await findAssetByCid(cid);
 
-  if (index === -1) {
+  if (!existing) {
     return null;
   }
 
-  assets[index] = { ...assets[index], ...updates };
-  await writeAssets(assets);
-  return assets[index];
-}
+  const db = await getDb();
+  const updated = { ...existing, ...updates };
+  const rows = await db
+    .update(assetsTable)
+    .set(assetToRow(updated))
+    .where(eq(assetsTable.cid, cid))
+    .returning();
 
-export function setAssetsFilePath(filePath: string): void {
-  process.env.ASSETS_FILE_PATH = filePath;
-}
-
-export function clearAssetsFilePath(): void {
-  delete process.env.ASSETS_FILE_PATH;
+  return rows[0] ? rowToAsset(rows[0]) : null;
 }
